@@ -124,25 +124,26 @@
     self.containerViewController.contentViewController = viewControllerToPresent;
     self.containerViewController.showsShadow = self.showsShadow;
     
-    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    self.window.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
-    self.window.opaque = NO;
-    self.window.backgroundColor = [UIColor clearColor];
-    self.window.rootViewController = self.containerViewController;
-    [self.window addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(windowTapped:)]];
-    
-    for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
-        if (window != self.window) {
-            [window.layer addAnimation:[self pullBackAnimation] forKey:@"pullBackAnimation"];
-            [UIView animateWithDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION animations:^{
-                window.center = CGPointMake(window.center.x, window.center.y - JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
-            }];
-        }
-    }
-    
+    // The animations and the new window to not properly show if not performed on the main thread.
     dispatch_async(dispatch_get_main_queue(), ^{
+        self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+        self.window.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
+        self.window.opaque = NO;
+        self.window.backgroundColor = [UIColor clearColor];
+        self.window.rootViewController = self.containerViewController;
+        [self.window addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(windowTapped:)]];
         [self.window makeKeyAndVisible];
+        
         [self.containerViewController showContentWithAnimationDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION completion:nil];
+        
+        for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
+            if (window != self.window) {
+                [window.layer addAnimation:[self pullBackAnimation] forKey:@"pullBackAnimation"];
+                [UIView animateWithDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION animations:^{
+                    window.center = CGPointMake(window.center.x, window.center.y - JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
+                }];
+            }
+        }
     });
 }
 
@@ -159,33 +160,36 @@
     
     self.dismissingViewController = YES;
     
-    for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
-        if (window != self.window) {
-            [window.layer addAnimation:[self pushForwardAnimation] forKey:@"pushForwardAnimation"];
-            [UIView animateWithDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION animations:^{
-                window.center = CGPointMake(window.center.x, window.center.y + JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
-            }];
-        }
-    }
-    
-    [self.containerViewController hideContentWithAnimationDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION completion:^(BOOL finished) {
-        [self.window resignKeyWindow];
-        [self.window removeFromSuperview];
-        self.window = nil;
-        self.containerViewController = nil;
-        
+    // If this isn't called on the main queue, the resulting animation and removal can have a multi-second delay.
+    dispatch_async(dispatch_get_main_queue(), ^{
         for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
-            [window.layer removeAllAnimations];
+            if (window != self.window) {
+                [window.layer addAnimation:[self pushForwardAnimation] forKey:@"pushForwardAnimation"];
+                [UIView animateWithDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION animations:^{
+                    window.center = CGPointMake(window.center.x, window.center.y + JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
+                }];
+            }
         }
         
-        self.presentingViewController = NO;
-        self.dismissingViewController = NO;
-        
-        if (self.dismissalBlock) {
-            self.dismissalBlock();
-            self.dismissalBlock = nil;
-        }
-    }];
+        [self.containerViewController hideContentWithAnimationDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION completion:^(BOOL finished) {
+            [self.window resignKeyWindow];
+            [self.window removeFromSuperview];
+            self.window = nil;
+            self.containerViewController = nil;
+            
+            for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
+                [window.layer removeAllAnimations];
+            }
+            
+            self.presentingViewController = NO;
+            self.dismissingViewController = NO;
+            
+            if (self.dismissalBlock) {
+                self.dismissalBlock();
+                self.dismissalBlock = nil;
+            }
+        }];
+    });
 }
 
 #pragma mark - Actions
