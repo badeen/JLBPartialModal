@@ -13,6 +13,7 @@
 @interface JLBPartialModalContainerViewController : UIViewController
 
 @property (strong, nonatomic) UIViewController *contentViewController;
+@property (nonatomic) BOOL showsShadow;
 
 @end
 
@@ -34,11 +35,17 @@
     self.contentViewController.view.transform = CGAffineTransformMakeTranslation(0.0f, CGRectGetHeight(self.contentViewController.view.frame));
     self.contentViewController.view.center = CGPointMake(CGRectGetMidX(self.view.bounds), CGRectGetMaxY(self.view.bounds) - (CGRectGetHeight(self.contentViewController.view.bounds) / 2.0f));
     self.contentViewController.view.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth;
+    if (self.showsShadow) {
+        self.contentViewController.view.layer.shadowColor = [[UIColor blackColor] CGColor];
+        self.contentViewController.view.layer.shadowRadius = 8.0f;
+        self.contentViewController.view.layer.shadowOpacity = 1.0f;
+        self.contentViewController.view.layer.shadowOffset = CGSizeMake(0.0f, 0.0f);
+    }
     [self.view addSubview:self.contentViewController.view];
     
     [UIView animateWithDuration:duration delay:0.0f options:UIViewAnimationOptionCurveEaseOut animations:^{
         self.contentViewController.view.transform = CGAffineTransformIdentity;
-        self.view.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.7f];
+        self.view.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.6f];
     } completion:^(BOOL finished) {
         [self.contentViewController didMoveToParentViewController:self];
         if (completion) {
@@ -78,8 +85,8 @@
 
 @implementation JLBPartialModal
 
-#define JLB_PARTIAL_MODAL_ANIMATION_DURATION 0.3f
-#define JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET 53.0f
+#define JLB_PARTIAL_MODAL_ANIMATION_DURATION 0.4f
+#define JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET 48.0f
 
 + (id)sharedInstance
 {
@@ -100,6 +107,8 @@
     return self;
 }
 
+#pragma mark - Presentation
+
 - (void)presentViewController:(UIViewController *)viewControllerToPresent dismissal:(void (^)(void))block
 {
     if (!self.isPresentingViewController) {
@@ -110,6 +119,7 @@
     
     self.containerViewController = [[JLBPartialModalContainerViewController alloc] init];
     self.containerViewController.contentViewController = viewControllerToPresent;
+    self.containerViewController.showsShadow = self.showsShadow;
     
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
@@ -160,6 +170,8 @@
         }
     }];
 }
+
+#pragma mark - Actions
 
 - (void)windowTapped:(UITapGestureRecognizer *)tapGestureRecognizer
 {

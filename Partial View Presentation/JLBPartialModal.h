@@ -10,6 +10,8 @@
 
 @interface JLBPartialModal : NSObject
 
+@property (nonatomic) BOOL showsShadow;
+
 + (id)sharedInstance;
 
 - (void)presentViewController:(UIViewController *)viewController dismissal:(void (^)(void))dismissalBlock;
