@@ -79,6 +79,7 @@
 @property (strong, nonatomic) JLBPartialModalContainerViewController *containerViewController;
 @property (strong, nonatomic) void (^dismissalBlock)(void);
 @property (nonatomic, getter = isPresentingViewController) BOOL presentingViewController;
+@property (nonatomic, getter = isDismissingViewController) BOOL dismissingViewController;
 
 @end
 
@@ -112,9 +113,11 @@
 - (void)presentViewController:(UIViewController *)viewControllerToPresent dismissal:(void (^)(void))block
 {
     if (!self.isPresentingViewController) {
+        self.presentingViewController = YES;
         self.dismissalBlock = block;
     } else {
         NSLog(@"JLBPartialModal is already presenting a view controller.");
+        return;
     }
     
     self.containerViewController = [[JLBPartialModalContainerViewController alloc] init];
@@ -145,6 +148,17 @@
 
 - (void)dismissViewController
 {
+    if (!self.isPresentingViewController) {
+        NSLog(@"JLBPartialModal is not presenting a view controller to be dismissed.");
+        return;
+    }
+    
+    if (self.isDismissingViewController) {
+        return;
+    }
+    
+    self.dismissingViewController = YES;
+    
     for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
         if (window != self.window) {
             [window.layer addAnimation:[self pushForwardAnimation] forKey:@"pushForwardAnimation"];
@@ -163,6 +177,9 @@
         for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
             [window.layer removeAllAnimations];
         }
+        
+        self.presentingViewController = NO;
+        self.dismissingViewController = NO;
         
         if (self.dismissalBlock) {
             self.dismissalBlock();
