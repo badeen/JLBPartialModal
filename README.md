@@ -17,4 +17,4 @@ The user will also be able to tap outside your provided view to close the modal.
 
 ##Demo Video
 
-You can watch a video of it in action here: [http://f.cl.ly/items/3J0F2n2N2Q3E313V3f3O/JLBPartialModal.mov](http://f.cl.ly/items/3J0F2n2N2Q3E313V3f3O/JLBPartialModal.mov "Demo video")
+You can watch a video of it in action here: [http://f.cl.ly/items/3P1x0I2b1l241U360V1M/JLBPartialModal%20720p.mov](http://f.cl.ly/items/3P1x0I2b1l241U360V1M/JLBPartialModal%20720p.mov "Demo video")
