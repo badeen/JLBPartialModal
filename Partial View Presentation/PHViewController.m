@@ -37,20 +37,12 @@
 - (IBAction)open:(id)sender
 {
     PHModalViewController *vc = [[PHModalViewController alloc] initWithNibName:nil bundle:nil];
-    if (!vc.isViewLoaded) {
-        [vc loadView];
-    }
-    vc.doneButton.action = @selector(closeModal:);
-    vc.doneButton.target = self;    
     
-    [[JLBPartialModal sharedInstance] presentViewController:vc dismissal:^{
+    JLBPartialModal *partialModal = [JLBPartialModal sharedInstance];
+    partialModal.delegate = vc;
+    [partialModal presentViewController:vc dismissal:^{
         
     }];
-}
-
-- (void)closeModal:(id)sender
-{
-    [[JLBPartialModal sharedInstance] dismissViewController];
 }
 
 @end

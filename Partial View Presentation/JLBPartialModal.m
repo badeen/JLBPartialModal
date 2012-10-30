@@ -136,11 +136,18 @@
         
         [self.containerViewController showContentWithAnimationDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION completion:nil];
         
+        __block BOOL hasCalledDelegate = NO;
+        
         for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
             if (window != self.window) {
                 [window.layer addAnimation:[self pullBackAnimation] forKey:@"pullBackAnimation"];
                 [UIView animateWithDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION animations:^{
                     window.center = CGPointMake(window.center.x, window.center.y - JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
+                } completion:^(BOOL finished) {
+                    if (!hasCalledDelegate) {
+                        [self.delegate didPresentPartialModalView:self];
+                        hasCalledDelegate = YES;
+                    }
                 }];
             }
         }
@@ -155,6 +162,10 @@
     }
     
     if (self.isDismissingViewController) {
+        return;
+    }
+    
+    if (self.delegate && ![self.delegate shouldDismissPartialModalView:self]) {
         return;
     }
     
@@ -188,6 +199,8 @@
                 self.dismissalBlock();
                 self.dismissalBlock = nil;
             }
+            
+            [self.delegate didDismissPartialModalView:self];
         }];
     });
 }

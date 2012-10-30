@@ -12,6 +12,7 @@
 
 @end
 
+
 @implementation PHModalViewController
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
@@ -33,6 +34,30 @@
 {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+
+#pragma mark - Actions
+
+- (IBAction)close:(id)sender
+{
+    [[JLBPartialModal sharedInstance] dismissViewController];
+}
+
+#pragma mark - Partial modal delegate
+
+- (void)didPresentPartialModalView:(JLBPartialModal *)partialModal
+{
+    
+}
+
+- (BOOL)shouldDismissPartialModalView:(JLBPartialModal *)partialModal
+{
+    return YES;
+}
+
+- (void)didDismissPartialModalView:(JLBPartialModal *)partialModal
+{
+
 }
 
 @end

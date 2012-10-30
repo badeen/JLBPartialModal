@@ -8,8 +8,10 @@
 
 #import <UIKit/UIKit.h>
 
-@interface PHModalViewController : UIViewController
+#import "JLBPartialModal.h"
 
-@property (weak, nonatomic) IBOutlet UIBarButtonItem *doneButton;
+@interface PHModalViewController : UIViewController <JLBPartialModalDelegate>
+
+- (IBAction)close:(id)sender;
 
 @end
