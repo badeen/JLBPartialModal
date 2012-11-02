@@ -103,7 +103,7 @@
 {
     self = [super init];
     if (self) {
-        
+        self.tapToDismiss = YES;
     }
     return self;
 }
@@ -209,6 +209,10 @@
 
 - (void)windowTapped:(UITapGestureRecognizer *)tapGestureRecognizer
 {
+    if(!self.tapToDismiss){
+        return;
+    }
+    
     if ([tapGestureRecognizer locationInView:self.containerViewController.contentViewController.view].y < 0) {
         [self dismissViewController];
     }
