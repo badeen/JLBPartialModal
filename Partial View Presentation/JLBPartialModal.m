@@ -10,6 +10,9 @@
 
 #import <QuartzCore/QuartzCore.h>
 
+@interface JLBPartialModalView : UIView
+@end
+
 @interface JLBPartialModalContainerViewController : UIViewController
 
 @property (strong, nonatomic) UIViewController *contentViewController;
@@ -18,6 +21,11 @@
 @end
 
 @implementation JLBPartialModalContainerViewController
+
+- (void)loadView
+{
+    self.view = [[JLBPartialModalView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]];
+}
 
 - (void)viewDidLoad
 {
@@ -131,7 +139,6 @@
         self.window.opaque = NO;
         self.window.backgroundColor = [UIColor clearColor];
         self.window.rootViewController = self.containerViewController;
-        [self.window addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(windowTapped:)]];
         [self.window makeKeyAndVisible];
         
         [self.containerViewController showContentWithAnimationDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION completion:nil];
@@ -205,19 +212,6 @@
     });
 }
 
-#pragma mark - Actions
-
-- (void)windowTapped:(UITapGestureRecognizer *)tapGestureRecognizer
-{
-    if(!self.tapToDismiss){
-        return;
-    }
-    
-    if ([tapGestureRecognizer locationInView:self.containerViewController.contentViewController.view].y < 0) {
-        [self dismissViewController];
-    }
-}
-
 #pragma mark - Animations
 
 - (CAKeyframeAnimation *)windowAnimation
@@ -274,6 +268,17 @@
     perspectiveTransform.m34 = 1.0f / -1000.0f;
     
     return perspectiveTransform;
+}
+
+@end
+
+@implementation JLBPartialModalView
+
+- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    if ([[JLBPartialModal sharedInstance] tapToDismiss]) {
+        [[JLBPartialModal sharedInstance] dismissViewController];
+    }
 }
 
 @end
