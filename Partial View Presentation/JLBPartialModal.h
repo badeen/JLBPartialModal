@@ -14,6 +14,7 @@
 @interface JLBPartialModal : NSObject
 
 @property (nonatomic) BOOL showsShadow;
+@property (nonatomic) BOOL tapToDismiss;
 @property (weak, nonatomic) id <JLBPartialModalDelegate> delegate;
 
 + (id)sharedInstance;
