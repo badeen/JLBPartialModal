@@ -276,7 +276,7 @@
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    if ([[JLBPartialModal sharedInstance] tapToDismiss]) {
+    if ([[JLBPartialModal sharedInstance] tapToDismiss] && [event touchesForView:self]) {
         [[JLBPartialModal sharedInstance] dismissViewController];
     }
 }
