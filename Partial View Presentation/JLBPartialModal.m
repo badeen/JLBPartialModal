@@ -164,7 +164,7 @@
 - (void)dismissViewController
 {
     if (!self.isPresentingViewController) {
-        NSLog(@"JLBPartialModal is not presenting a view controller to be dismissed.");
+//        NSLog(@"JLBPartialModal is not presenting a view controller to be dismissed.");
         return;
     }
     
