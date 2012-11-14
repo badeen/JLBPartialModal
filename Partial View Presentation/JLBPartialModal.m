@@ -94,7 +94,6 @@
 
 @implementation JLBPartialModal
 
-#define JLB_PARTIAL_MODAL_ANIMATION_DURATION 0.4f
 #define JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET 48.0f
 
 + (id)sharedInstance
@@ -112,6 +111,8 @@
     self = [super init];
     if (self) {
         self.tapToDismiss = YES;
+        self.shouldTransform = YES;
+        self.animationDuration = 0.4f;
     }
     return self;
 }
@@ -141,21 +142,28 @@
         self.window.rootViewController = self.containerViewController;
         [self.window makeKeyAndVisible];
         
-        [self.containerViewController showContentWithAnimationDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION completion:nil];
+        [self.containerViewController showContentWithAnimationDuration:self.animationDuration completion:nil];
         
         __block BOOL hasCalledDelegate = NO;
         
         for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
             if (window != self.window) {
-                [window.layer addAnimation:[self pullBackAnimation] forKey:@"pullBackAnimation"];
-                [UIView animateWithDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION animations:^{
-                    window.center = CGPointMake(window.center.x, window.center.y - JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
-                } completion:^(BOOL finished) {
+                if(self.shouldTransform){
+                    [window.layer addAnimation:[self pullBackAnimation] forKey:@"pullBackAnimation"];
+                    [UIView animateWithDuration:self.animationDuration animations:^{
+                        window.center = CGPointMake(window.center.x, window.center.y - JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
+                    } completion:^(BOOL finished) {
+                        if (!hasCalledDelegate) {
+                            [self.delegate didPresentPartialModalView:self];
+                            hasCalledDelegate = YES;
+                        }
+                    }];
+                }else{
                     if (!hasCalledDelegate) {
                         [self.delegate didPresentPartialModalView:self];
                         hasCalledDelegate = YES;
                     }
-                }];
+                }
             }
         }
     });
@@ -180,16 +188,18 @@
     
     // If this isn't called on the main queue, the resulting animation and removal can have a multi-second delay.
     dispatch_async(dispatch_get_main_queue(), ^{
-        for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
-            if (window != self.window) {
-                [window.layer addAnimation:[self pushForwardAnimation] forKey:@"pushForwardAnimation"];
-                [UIView animateWithDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION animations:^{
-                    window.center = CGPointMake(window.center.x, window.center.y + JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
-                }];
+        if(self.shouldTransform){
+            for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
+                if (window != self.window) {
+                    [window.layer addAnimation:[self pushForwardAnimation] forKey:@"pushForwardAnimation"];
+                    [UIView animateWithDuration:self.animationDuration animations:^{
+                        window.center = CGPointMake(window.center.x, window.center.y + JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
+                    }];
+                }
             }
         }
-        
-        [self.containerViewController hideContentWithAnimationDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION completion:^(BOOL finished) {
+
+        [self.containerViewController hideContentWithAnimationDuration:self.animationDuration completion:^(BOOL finished) {
             [self.window resignKeyWindow];
             [self.window removeFromSuperview];
             self.window = nil;
@@ -217,7 +227,7 @@
 - (CAKeyframeAnimation *)windowAnimation
 {
     CAKeyframeAnimation *anim = [CAKeyframeAnimation animationWithKeyPath:@"transform"];
-    anim.duration = JLB_PARTIAL_MODAL_ANIMATION_DURATION;
+    anim.duration = self.animationDuration;
     anim.calculationMode = kCAAnimationCubic;
     anim.removedOnCompletion = NO;
     anim.fillMode = kCAFillModeForwards;
