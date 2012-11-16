@@ -44,10 +44,12 @@
     self.contentViewController.view.center = CGPointMake(CGRectGetMidX(self.view.bounds), CGRectGetMaxY(self.view.bounds) - (CGRectGetHeight(self.contentViewController.view.bounds) / 2.0f));
     self.contentViewController.view.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth;
     if (self.showsShadow) {
-        self.contentViewController.view.layer.shadowColor = [[UIColor blackColor] CGColor];
-        self.contentViewController.view.layer.shadowRadius = 8.0f;
-        self.contentViewController.view.layer.shadowOpacity = 1.0f;
-        self.contentViewController.view.layer.shadowOffset = CGSizeMake(0.0f, 0.0f);
+        CGFloat height = 8;
+        CAGradientLayer *gradient = [CAGradientLayer layer];
+        gradient.colors = @[(id)[[UIColor clearColor] CGColor],
+        (id)[[UIColor colorWithWhite:0 alpha:0.2] CGColor]];
+        gradient.frame = (CGRect){0, -height, CGRectGetWidth(self.contentViewController.view.bounds), height};
+        [self.contentViewController.view.layer addSublayer:gradient];
     }
     [self.view addSubview:self.contentViewController.view];
     
