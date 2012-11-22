@@ -14,6 +14,9 @@
 @interface JLBPartialModal : NSObject
 
 @property (nonatomic) BOOL showsShadow;
+@property (nonatomic) BOOL tapToDismiss;
+@property (nonatomic) BOOL shouldTransform;
+@property (nonatomic) NSTimeInterval animationDuration;
 @property (weak, nonatomic) id <JLBPartialModalDelegate> delegate;
 
 + (id)sharedInstance;

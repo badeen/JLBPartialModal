@@ -10,6 +10,9 @@
 
 #import <QuartzCore/QuartzCore.h>
 
+@interface JLBPartialModalView : UIView
+@end
+
 @interface JLBPartialModalContainerViewController : UIViewController
 
 @property (strong, nonatomic) UIViewController *contentViewController;
@@ -18,6 +21,11 @@
 @end
 
 @implementation JLBPartialModalContainerViewController
+
+- (void)loadView
+{
+    self.view = [[JLBPartialModalView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]];
+}
 
 - (void)viewDidLoad
 {
@@ -36,10 +44,12 @@
     self.contentViewController.view.center = CGPointMake(CGRectGetMidX(self.view.bounds), CGRectGetMaxY(self.view.bounds) - (CGRectGetHeight(self.contentViewController.view.bounds) / 2.0f));
     self.contentViewController.view.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth;
     if (self.showsShadow) {
-        self.contentViewController.view.layer.shadowColor = [[UIColor blackColor] CGColor];
-        self.contentViewController.view.layer.shadowRadius = 8.0f;
-        self.contentViewController.view.layer.shadowOpacity = 1.0f;
-        self.contentViewController.view.layer.shadowOffset = CGSizeMake(0.0f, 0.0f);
+        CGFloat height = 8;
+        CAGradientLayer *gradient = [CAGradientLayer layer];
+        gradient.colors = @[(id)[[UIColor clearColor] CGColor],
+        (id)[[UIColor colorWithWhite:0 alpha:0.2] CGColor]];
+        gradient.frame = (CGRect){0, -height, CGRectGetWidth(self.contentViewController.view.bounds), height};
+        [self.contentViewController.view.layer addSublayer:gradient];
     }
     [self.view addSubview:self.contentViewController.view];
     
@@ -86,7 +96,6 @@
 
 @implementation JLBPartialModal
 
-#define JLB_PARTIAL_MODAL_ANIMATION_DURATION 0.4f
 #define JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET 48.0f
 
 + (id)sharedInstance
@@ -103,7 +112,9 @@
 {
     self = [super init];
     if (self) {
-        
+        self.tapToDismiss = YES;
+        self.shouldTransform = YES;
+        self.animationDuration = 0.4f;
     }
     return self;
 }
@@ -131,24 +142,30 @@
         self.window.opaque = NO;
         self.window.backgroundColor = [UIColor clearColor];
         self.window.rootViewController = self.containerViewController;
-        [self.window addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(windowTapped:)]];
         [self.window makeKeyAndVisible];
         
-        [self.containerViewController showContentWithAnimationDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION completion:nil];
+        [self.containerViewController showContentWithAnimationDuration:self.animationDuration completion:nil];
         
         __block BOOL hasCalledDelegate = NO;
         
         for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
             if (window != self.window) {
-                [window.layer addAnimation:[self pullBackAnimation] forKey:@"pullBackAnimation"];
-                [UIView animateWithDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION animations:^{
-                    window.center = CGPointMake(window.center.x, window.center.y - JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
-                } completion:^(BOOL finished) {
+                if(self.shouldTransform){
+                    [window.layer addAnimation:[self pullBackAnimation] forKey:@"pullBackAnimation"];
+                    [UIView animateWithDuration:self.animationDuration animations:^{
+                        window.center = CGPointMake(window.center.x, window.center.y - JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
+                    } completion:^(BOOL finished) {
+                        if (!hasCalledDelegate) {
+                            [self.delegate didPresentPartialModalView:self];
+                            hasCalledDelegate = YES;
+                        }
+                    }];
+                }else{
                     if (!hasCalledDelegate) {
                         [self.delegate didPresentPartialModalView:self];
                         hasCalledDelegate = YES;
                     }
-                }];
+                }
             }
         }
     });
@@ -157,7 +174,7 @@
 - (void)dismissViewController
 {
     if (!self.isPresentingViewController) {
-        NSLog(@"JLBPartialModal is not presenting a view controller to be dismissed.");
+//        NSLog(@"JLBPartialModal is not presenting a view controller to be dismissed.");
         return;
     }
     
@@ -173,16 +190,18 @@
     
     // If this isn't called on the main queue, the resulting animation and removal can have a multi-second delay.
     dispatch_async(dispatch_get_main_queue(), ^{
-        for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
-            if (window != self.window) {
-                [window.layer addAnimation:[self pushForwardAnimation] forKey:@"pushForwardAnimation"];
-                [UIView animateWithDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION animations:^{
-                    window.center = CGPointMake(window.center.x, window.center.y + JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
-                }];
+        if(self.shouldTransform){
+            for (UIWindow *window in [[UIApplication sharedApplication] windows]) {
+                if (window != self.window) {
+                    [window.layer addAnimation:[self pushForwardAnimation] forKey:@"pushForwardAnimation"];
+                    [UIView animateWithDuration:self.animationDuration animations:^{
+                        window.center = CGPointMake(window.center.x, window.center.y + JLB_PARTIAL_MODAL_WINDOW_VERTICAL_OFFSET);
+                    }];
+                }
             }
         }
-        
-        [self.containerViewController hideContentWithAnimationDuration:JLB_PARTIAL_MODAL_ANIMATION_DURATION completion:^(BOOL finished) {
+
+        [self.containerViewController hideContentWithAnimationDuration:self.animationDuration completion:^(BOOL finished) {
             [self.window resignKeyWindow];
             [self.window removeFromSuperview];
             self.window = nil;
@@ -197,7 +216,7 @@
             
             if (self.dismissalBlock) {
                 self.dismissalBlock();
-                self.dismissalBlock = nil;
+//                self.dismissalBlock = nil;
             }
             
             [self.delegate didDismissPartialModalView:self];
@@ -205,21 +224,12 @@
     });
 }
 
-#pragma mark - Actions
-
-- (void)windowTapped:(UITapGestureRecognizer *)tapGestureRecognizer
-{
-    if ([tapGestureRecognizer locationInView:self.containerViewController.contentViewController.view].y < 0) {
-        [self dismissViewController];
-    }
-}
-
 #pragma mark - Animations
 
 - (CAKeyframeAnimation *)windowAnimation
 {
     CAKeyframeAnimation *anim = [CAKeyframeAnimation animationWithKeyPath:@"transform"];
-    anim.duration = JLB_PARTIAL_MODAL_ANIMATION_DURATION;
+    anim.duration = self.animationDuration;
     anim.calculationMode = kCAAnimationCubic;
     anim.removedOnCompletion = NO;
     anim.fillMode = kCAFillModeForwards;
@@ -270,6 +280,17 @@
     perspectiveTransform.m34 = 1.0f / -1000.0f;
     
     return perspectiveTransform;
+}
+
+@end
+
+@implementation JLBPartialModalView
+
+- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    if ([[JLBPartialModal sharedInstance] tapToDismiss] && [event touchesForView:self]) {
+        [[JLBPartialModal sharedInstance] dismissViewController];
+    }
 }
 
 @end
