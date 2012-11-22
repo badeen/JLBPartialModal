@@ -216,7 +216,7 @@
             
             if (self.dismissalBlock) {
                 self.dismissalBlock();
-                self.dismissalBlock = nil;
+//                self.dismissalBlock = nil;
             }
             
             [self.delegate didDismissPartialModalView:self];
